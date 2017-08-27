@@ -16,17 +16,16 @@ namespace VideoPlayer
     public partial class MainWindow : Window
     {
         string[] videoFiles;
-        int videoIndex = 0;
 
         string activeVideoFile;
-        string status;
+        string status = "loaded";
       
 
         public MainWindow()
         {
             InitializeComponent();
 
-            // automaticly move to second screen
+            // automaticly move to second screen on the left
             if (Screen.AllScreens.Length > 1)
             {
                 Screen s2 = Screen.AllScreens[0];
@@ -134,17 +133,6 @@ namespace VideoPlayer
 
         private void videoPlayer_MediaEnded(object sender, RoutedEventArgs e)
         {
-            //if (videoFiles.Length > 1)
-            //{               
- 
-            //    // disabled because video stops after a while.
-            //    // best fix is to recreate the video object .. ?
-            //   nextVideo();
-
-            //}
-            
-            //videoPlayer.Position = TimeSpan.FromSeconds(0);
-            //videoPlayer.Play();
             videoPlayer.Visibility = System.Windows.Visibility.Hidden;
             status = "stopped";
         }
