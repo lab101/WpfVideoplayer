@@ -4,6 +4,6 @@
         Title="MainWindow" Height="350" Width="525">
     <Grid Background="Black">
         <MediaElement x:Name="videoPlayer"  RenderTransformOrigin="0.5,0.5"  MediaEnded="videoPlayer_MediaEnded" LoadedBehavior="Manual" Loaded="videoPlayer_Loaded"></MediaElement>
-        <TextBlock x:Name="txtInfo" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+        <TextBlock x:Name="txtInfo" Foreground="White" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"></TextBlock>
     </Grid>
 </Window>

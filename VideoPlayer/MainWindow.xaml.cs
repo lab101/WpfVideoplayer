@@ -1,9 +1,8 @@
-﻿using System;
-using System.Windows;
+﻿using SimpleWebServer;
+using System;
 using System.IO;
 using System.Net;
-using SimpleWebServer;
-
+using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media;
 
@@ -19,7 +18,7 @@ namespace VideoPlayer
 
         string activeVideoFile;
         string status = "loaded";
-      
+        bool isLoopableActive = false;
 
         public MainWindow()
         {
@@ -56,75 +55,132 @@ namespace VideoPlayer
         }
 
 
-        public  string SendResponse(HttpListenerRequest request)
+        public string getVideoPath()
+        {
+            return AppDomain.CurrentDomain.BaseDirectory + "\\videos\\";
+
+        }
+
+        public string SendResponse(HttpListenerRequest request)
         {
 
-            if (request.Url.Segments.Length == 2)
+            string command = "";
+
+            // check for valid url
+            if (request.Url.Segments.Length >= 2)
             {
-                if (request.Url.Segments[1] == "status")
-                {
-                    return activeVideoFile + ":" + status;
-                }
+                command = request.Url.Segments[1];
+                command = command.Replace("/", "");
+            }
+            else
+            {
+                return "no valid url";
             }
 
-            if (request.Url.Segments.Length <= 2) return "error";
+            // get status
+            if (command == "status")
+            {
+               return activeVideoFile + ":" + status + ";loop:" + isLoopableActive ;
+            }
+
+            if (command == "stop")
+            {
+                stopVideo();
+                return "stopped";
+            }
 
 
+            if (command == "start")
+            {
+                string fileName = request.Url.Segments[2];
+                // checking for options
+                int flipX = 1;
+                int flipY = 1;
 
-           string fileName = request.Url.Segments[2];
-           string fullPath = AppDomain.CurrentDomain.BaseDirectory + "\\videos\\" + fileName;
+                if (request.QueryString["flipX"] != null)
+                {
+                    flipX = -1;
+                }
+                if (request.QueryString["flipY"] != null)
+                {
+                    flipY = -1;
+                }
 
-           if (File.Exists(fullPath))
-           {
-
-               activeVideoFile = fileName;
-
-               // Run this on the mainthread. Because request is comming from a separte thread
-               Dispatcher.BeginInvoke(new Action(() =>
-               {
-
-                   // checking for options
-                   int flip = 1;
-
-                   if (request.QueryString["flip"] != null)
-                   {
-                       flip = -1;
-                   }
+                // check if video needs to be in a loop
+                isLoopableActive = (request.QueryString["loop"] != null) && request.QueryString["loop"] == "1";
 
 
-                   ScaleTransform flipTrans = new ScaleTransform(1, flip);
-                   videoPlayer.RenderTransform = flipTrans;
+                bool videoStatus =  startVideo(fileName,flipX,flipY);
+                return fileName + (videoStatus ? ":found" : ":notfound");
+            }
 
-                   videoPlayer.Visibility = System.Windows.Visibility.Visible;
-                   videoPlayer.Source = new Uri(fullPath);
+            return "UNKNOWN";
 
-                   status = "started";
-               }
 
-              ));
-
-               return activeVideoFile + ":found";
-           }
-           else
-           {
-               return activeVideoFile + ":notfound";
-           }
              
         }
+
+        void stopVideo()
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+
+                videoPlayer.Visibility = System.Windows.Visibility.Hidden;
+                videoPlayer.Stop();
+                status = "stopped";
+
+            }
+            ));
+
+        }
+
+
+        bool startVideo(string fileName, int flipX, int flipY)
+        {
+            string fullPath = getVideoPath() + fileName;
+
+            if (File.Exists(fullPath))
+            {
+
+                activeVideoFile = fileName;
+
+                // Run this on the mainthread. Because request is comming from a separte thread
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+
+                    ScaleTransform flipTrans = new ScaleTransform(flipX, flipY);
+                    videoPlayer.RenderTransform = flipTrans;
+
+                    videoPlayer.Visibility = System.Windows.Visibility.Visible;
+                    videoPlayer.Source = new Uri(fullPath);
+                    status = "started";
+
+                }
+
+               ));
+
+
+                return true;
+
+            } else{
+                return false;
+            }
+        }
+
 
 
         void loadFilesFromVideoFolder()
         {
-            string videoFolderPath = AppDomain.CurrentDomain.BaseDirectory + "\\videos\\";
+            string videoFolderPath = getVideoPath();
 
-            if(!Directory.Exists(videoFolderPath)){
+            if (!Directory.Exists(videoFolderPath)){
                 Directory.CreateDirectory(videoFolderPath);
             }
 
             videoFiles = Directory.GetFiles(videoFolderPath , "*.mp4");
             if (videoFiles.Length == 0)
             {
-                txtInfo.Text = "no videos found";
+                txtInfo.Text = "no videos found\n" + videoFolderPath;
                 return;
             }
         }
@@ -133,8 +189,15 @@ namespace VideoPlayer
 
         private void videoPlayer_MediaEnded(object sender, RoutedEventArgs e)
         {
-            videoPlayer.Visibility = System.Windows.Visibility.Hidden;
-            status = "stopped";
+            if (isLoopableActive)
+            {
+                videoPlayer.Position = TimeSpan.FromSeconds(0);
+                videoPlayer.Play();
+            }else
+            {
+                videoPlayer.Visibility = System.Windows.Visibility.Hidden;
+                status = "stopped";
+            }
         }
 
 
