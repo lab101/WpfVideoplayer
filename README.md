@@ -1,8 +1,7 @@
-#Fullscreen videoplayer controlable through http requests
+# Fullscreen videoplayer controlable through http requests
 This app uses mediaelement in WPF 
 
 Videos should be placed in the /videos folder
-
 The webserver will start on port 8080
 
 #### Get current status
@@ -17,5 +16,5 @@ http://localhost:8080/start/b.mp4
 ####If playing stop.
 http://localhost:8080/stop
 
-####Flip video
+#### Flip video
 Add &flipX=1 or flipY=1 to flip the video over x or y axis
